@@ -87,6 +87,24 @@ class Direction(Enum):
             cls.OUT: cls.ENTER,
         }
         return opposites.get(direction)
+    
+    @classmethod
+    def normalize(cls, direction: str) -> str:
+        """
+        Normalize a direction string to its canonical short form.
+        Returns the original string if not a recognized direction.
+        
+        Examples:
+            "north" -> "n"
+            "n" -> "n"
+            "northeast" -> "ne"
+            "enter" -> "enter"
+            "unknown" -> "unknown"
+        """
+        dir_enum = cls.from_string(direction)
+        if dir_enum:
+            return dir_enum.value
+        return direction.lower().strip()
 
 
 @dataclass
@@ -174,13 +192,15 @@ class RoomNode:
     z: Optional[float] = None  # For multi-level maps
     
     def add_exit(self, direction: str, target_room_id: str) -> None:
-        """Add or update an exit."""
-        self.exits[direction] = target_room_id
+        """Add or update an exit. Direction is normalized to canonical short form."""
+        normalized_dir = Direction.normalize(direction)
+        self.exits[normalized_dir] = target_room_id
     
     def remove_exit(self, direction: str) -> bool:
         """Remove an exit. Returns True if it existed."""
-        if direction in self.exits:
-            del self.exits[direction]
+        normalized_dir = Direction.normalize(direction)
+        if normalized_dir in self.exits:
+            del self.exits[normalized_dir]
             return True
         return False
     
@@ -261,6 +281,12 @@ class RoomNode:
             data["items"] = [RoomItem.from_dict(i) for i in data["items"]]
         if "npcs" in data:
             data["npcs"] = [RoomNPC.from_dict(n) for n in data["npcs"]]
+        
+        # Normalize exit directions for compatibility with old data
+        if "exits" in data:
+            data["exits"] = {
+                Direction.normalize(k): v for k, v in data["exits"].items()
+            }
         
         return cls(**data)
 
@@ -435,7 +461,10 @@ class MapGraph:
         cost: float = 1.0,
         bidirectional: bool = True,
     ) -> MapEdge:
-        """Add an edge between rooms."""
+        """Add an edge between rooms. Direction is normalized to canonical short form."""
+        # Normalize direction
+        normalized_dir = Direction.normalize(direction)
+        
         # Ensure rooms exist
         if from_room_id not in self.rooms:
             logger.warning(f"Source room {from_room_id} not found, creating placeholder")
@@ -445,54 +474,69 @@ class MapGraph:
             logger.warning(f"Target room {to_room_id} not found, creating placeholder")
             self.add_room(RoomNode(room_id=to_room_id, name=f"Room {to_room_id}"))
         
-        # Create edge
+        # Check if edge already exists in index
+        if from_room_id in self._edge_index and normalized_dir in self._edge_index[from_room_id]:
+            existing_edge = self._edge_index[from_room_id][normalized_dir]
+            # Update existing edge if target changed
+            if existing_edge.to_room != to_room_id:
+                existing_edge.to_room = to_room_id
+                existing_edge.cost = cost
+                existing_edge.bidirectional = bidirectional
+                # Update room exits
+                self.rooms[from_room_id].add_exit(normalized_dir, to_room_id)
+                self.last_modified = datetime.now()
+            return existing_edge
+        
+        # Create new edge
         edge = MapEdge(
             from_room=from_room_id,
             to_room=to_room_id,
-            direction=direction,
+            direction=normalized_dir,
             cost=cost,
             bidirectional=bidirectional,
         )
         
         # Update room exits
-        self.rooms[from_room_id].add_exit(direction, to_room_id)
+        self.rooms[from_room_id].add_exit(normalized_dir, to_room_id)
         
         # Add reverse edge if bidirectional
         if bidirectional:
-            dir_enum = Direction.from_string(direction)
+            dir_enum = Direction.from_string(normalized_dir)
             if dir_enum:
                 opposite = Direction.get_opposite(dir_enum)
                 if opposite:
                     self.rooms[to_room_id].add_exit(opposite.value, from_room_id)
         
-        # Add to edge list
+        # Add to edge list (only if not already present)
         self.edges.append(edge)
         
         # Update index
         if from_room_id not in self._edge_index:
             self._edge_index[from_room_id] = {}
-        self._edge_index[from_room_id][direction] = edge
+        self._edge_index[from_room_id][normalized_dir] = edge
         
         self.last_modified = datetime.now()
         return edge
     
     def remove_edge(self, from_room_id: str, direction: str) -> bool:
         """Remove an edge. Returns True if it existed."""
+        normalized_dir = Direction.normalize(direction)
+        
         if from_room_id not in self._edge_index:
             return False
         
-        if direction not in self._edge_index[from_room_id]:
+        if normalized_dir not in self._edge_index[from_room_id]:
             return False
         
-        edge = self._edge_index[from_room_id][direction]
+        edge = self._edge_index[from_room_id][normalized_dir]
         
         # Remove from room exits
         if from_room_id in self.rooms:
-            self.rooms[from_room_id].remove_exit(direction)
+            self.rooms[from_room_id].remove_exit(normalized_dir)
         
         # Remove reverse if bidirectional
         if edge.bidirectional and edge.to_room in self.rooms:
-            dir_enum = Direction.from_string(direction)
+            dir_enum = Direction.from_string(normalized_dir)
             if dir_enum:
                 opposite = Direction.get_opposite(dir_enum)
                 if opposite:
@@ -502,16 +546,17 @@ class MapGraph:
         self.edges.remove(edge)
         
         # Update index
-        del self._edge_index[from_room_id][direction]
+        del self._edge_index[from_room_id][normalized_dir]
         
         self.last_modified = datetime.now()
         return True
     
     def get_edge(self, from_room_id: str, direction: str) -> Optional[MapEdge]:
         """Get an edge by room and direction."""
+        normalized_dir = Direction.normalize(direction)
         if from_room_id not in self._edge_index:
             return None
-        return self._edge_index[from_room_id].get(direction)
+        return self._edge_index[from_room_id].get(normalized_dir)
     
     def get_adjacent_rooms(self, room_id: str) -> list[tuple[str, str, str]]:
         """Get all adjacent rooms. Returns list of (direction, room_id, room_name)."""
@@ -834,9 +879,11 @@ class MapGraph:
             map_graph.rooms[rid] = room
             map_graph._edge_index[rid] = {}
         
-        # Load edges and rebuild index
+        # Load edges and rebuild index (normalize directions for compatibility)
         for edge_data in data.get("edges", []):
             edge = MapEdge.from_dict(edge_data)
+            # Normalize direction for consistency
+            edge.direction = Direction.normalize(edge.direction)
             map_graph.edges.append(edge)
             
             if edge.from_room not in map_graph._edge_index:
