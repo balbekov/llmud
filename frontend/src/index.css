@@ -101,3 +101,55 @@ body {
   @apply bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white 
          focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent;
 }
+
+/* ReactFlow styles */
+.react-flow__node {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.react-flow__controls {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+.react-flow__controls-button {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #9ca3af !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor !important;
+}
+
+.react-flow__minimap {
+  background-color: #1f2937 !important;
+  border: 1px solid #374151 !important;
+}
+
+.react-flow__minimap-mask {
+  fill: rgba(0, 0, 0, 0.7) !important;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2px;
+}
+
+.react-flow__edge-text {
+  font-size: 10px;
+}
+
+.react-flow__background {
+  background-color: #111827 !important;
+}
+
+/* Panel styling */
+.react-flow__panel {
+  margin: 8px !important;
+}
