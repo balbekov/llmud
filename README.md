@@ -1,159 +1,239 @@
-# llmud
+# LLMUD - AI-Powered MUD Client
 
-llmud is a lightweight, extensible, text-based MUD (Multi-User Dungeon) server and tooling repository. This README provides an overview, quickstart instructions, configuration examples, and guidance for contributors.
+An AI-driven MUD (Multi-User Dungeon) client designed for DuneMUD, featuring LLM-powered gameplay, room visualization, and a modern web interface.
 
-> NOTE: This README is intentionally generic. If you want a version with language-specific build and run commands (for example, Go, Rust, Python, Node, etc.), tell me which language(s) the repo uses or allow me to inspect the repository and I'll update the instructions with exact commands.
-
-## Table of Contents
-
-- [Features](#features)
-- [Requirements](#requirements)
-- [Quickstart](#quickstart)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Development](#development)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+![LLMUD Architecture](https://via.placeholder.com/800x400?text=LLMUD+Architecture)
 
 ## Features
 
-- Minimal, fast MUD server core
-- Extensible command/room/item system
-- Simple player persistence
-- Basic network interface for TCP/WS clients
-- Hooks for custom game logic and plugins
+### Python MUD Client Package (`mud_client/`)
+- **Telnet Connection**: Full telnet protocol support with GMCP (Generic MUD Communication Protocol)
+- **LLM Integration**: Support for Anthropic Claude and OpenAI GPT-4 for AI decision making
+- **Smart Context Management**: Efficient token usage with strategy always in context
+- **Game State Tracking**: Automatic parsing of game output and GMCP data
+- **World Mapping**: Track explored rooms and navigation paths
 
-## Requirements
+### Web Interface (`frontend/`)
+- **Real-time Game Display**: Live MUD text output with ANSI color support
+- **Room Visualization**: AI-generated images of game locations using Dune aesthetics
+- **Dynamic Action Buttons**: Context-aware navigation and combat controls
+- **Player Status Dashboard**: HP, CP, stats, money, and location tracking
+- **Interactive Map**: Visual representation of explored areas
+- **Auto-Play Mode**: Let the AI play while you watch
 
-- Git
-- A runtime or compiler appropriate to the project's language (e.g., Go, Rust, Python, Node).  
-- Optional: Docker (for containerized runs)
+### Backend API (`backend/`)
+- **FastAPI Server**: RESTful API and WebSocket support
+- **Session Management**: Multiple concurrent MUD sessions
+- **Image Generation**: Integration with Replicate for room visualization
 
-If you tell me the repository's primary language(s), I will add exact prerequisite versions and package instructions.
+## Architecture
 
-## Quickstart
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      React Frontend                          │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │MUD Output│ │Room Viz  │ │Action Btns│ │Player Sts│       │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
+└─────────────────────────────┬───────────────────────────────┘
+                              │ WebSocket + REST
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      FastAPI Backend                         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐                    │
+│  │Session   │ │LLM Agent │ │Image Gen │                    │
+│  │Manager   │ │Interface │ │Service   │                    │
+│  └──────────┘ └──────────┘ └──────────┘                    │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    LLMUD Python Package                      │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │Telnet    │ │GMCP      │ │Game      │ │Context   │       │
+│  │Client    │ │Handler   │ │State     │ │Manager   │       │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
+└─────────────────────────────┬───────────────────────────────┘
+                              │ Telnet + GMCP
+                              ▼
+                    ┌─────────────────┐
+                    │    DuneMUD      │
+                    │  dunemud.net    │
+                    └─────────────────┘
+```
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/balbekov/llmud.git
-   cd llmud
-   ```
+## Quick Start
 
-2. Build and run (language-agnostic placeholders — replace with the correct command for your project):
-   - If there's a Makefile:
-     ```
-     make build
-     make run
-     ```
-   - If the project provides a run script:
-     ```
-     ./run.sh
-     ```
-   - Using Docker (if a Dockerfile exists):
-     ```
-     docker build -t llmud .
-     docker run -p 4000:4000 llmud
-     ```
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- API key for Anthropic or OpenAI
 
-If you want, I can replace the placeholders above with the exact build and run commands after inspecting the repository.
+### Local Development
+
+1. **Clone and setup environment:**
+```bash
+git clone <repo-url>
+cd llmud
+
+# Create Python virtual environment
+python -m venv venv
+source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+
+# Install Python dependencies
+pip install -r backend/requirements.txt
+cd mud_client && pip install -e . && cd ..
+```
+
+2. **Configure environment:**
+```bash
+# Copy example env files
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+# Edit backend/.env and add your API keys
+```
+
+3. **Start the backend:**
+```bash
+cd backend
+uvicorn main:app --reload --port 8000
+```
+
+4. **Start the frontend (new terminal):**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+5. **Open http://localhost:5173** in your browser
+
+### Using Docker
+
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Frontend: http://localhost:3000
+# Backend: http://localhost:8000
+```
+
+## Deployment to Render
+
+1. Fork this repository
+2. Create a new Render account at [render.com](https://render.com)
+3. Connect your GitHub repository
+4. Use the Blueprint feature with `render.yaml`
+5. Set environment variables:
+   - `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+   - `REPLICATE_API_TOKEN` (optional, for image generation)
 
 ## Configuration
 
-The server reads configuration from a file (example path: `config.yaml` or `config.json`). Example configuration (YAML):
+### Environment Variables
 
-```yaml
-server:
-  host: "0.0.0.0"
-  port: 4000
-persistence:
-  backend: "sqlite"
-  database: "data/llmud.db"
-logging:
-  level: "info"
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | Yes* | Anthropic Claude API key |
+| `OPENAI_API_KEY` | Yes* | OpenAI API key |
+| `REPLICATE_API_TOKEN` | No | Replicate API for image generation |
+| `PORT` | No | Backend port (default: 8000) |
+| `VITE_API_URL` | Yes | Frontend → Backend URL |
+
+*At least one LLM API key is required
+
+### Strategy Configuration
+
+The AI uses `strategy.md` to guide gameplay. You can customize:
+- Navigation priorities
+- Combat strategies
+- Leveling approaches
+- Guild-specific tactics
+
+## Project Structure
+
+```
+llmud/
+├── mud_client/              # Python MUD client package
+│   └── llmud/
+│       ├── telnet_client.py # Telnet + GMCP connection
+│       ├── gmcp_handler.py  # GMCP message processing
+│       ├── game_state.py    # Game state tracking
+│       ├── context_manager.py # LLM context management
+│       ├── llm_agent.py     # LLM integration
+│       └── mud_session.py   # Session orchestration
+├── backend/                 # FastAPI backend
+│   └── main.py             # API server
+├── frontend/               # React web app
+│   └── src/
+│       ├── components/     # React components
+│       ├── store/          # Zustand state management
+│       └── api/            # API client
+├── strategy.md             # AI gameplay strategy
+├── render.yaml             # Render deployment config
+└── docker-compose.yml      # Docker composition
 ```
 
-Adjust keys and values to match your project's configuration options. If you provide the actual config schema or file, I'll add a precise example.
+## Game Strategy
 
-## Usage
+The AI follows the strategy defined in `strategy.md`, which includes:
 
-- Connect with a plain TCP client:
-  ```
-  nc localhost 4000
-  ```
-- Or, if the server exposes a WebSocket endpoint, use any WebSocket client to connect.
+1. **Early Game (Levels 1-30)**: Focus on newbie areas, learning commands
+2. **Mid Game (Levels 30-100)**: Expand to mid-level zones, join a guild
+3. **Late Game (Levels 100+)**: Tackle challenging areas, optimize builds
 
-Example session:
+See [strategy.md](strategy.md) for the complete strategy guide.
+
+## API Reference
+
+### REST Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Health check |
+| GET | `/api/config` | Server configuration |
+| POST | `/api/sessions` | Create new session |
+| GET | `/api/sessions/{id}` | Get session state |
+| POST | `/api/sessions/{id}/command` | Send MUD command |
+| POST | `/api/sessions/{id}/ai-action` | Request AI action |
+| DELETE | `/api/sessions/{id}` | Disconnect session |
+| POST | `/api/generate-image` | Generate room image |
+
+### WebSocket
+
+Connect to `/ws/{session_id}` for real-time updates:
+
+```javascript
+const ws = new WebSocket('ws://localhost:8000/ws/session_123');
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  // Handle: text, state_change, chat, ai_action, error
+};
+
+// Send commands
+ws.send(JSON.stringify({ type: 'command', command: 'look' }));
+ws.send(JSON.stringify({ type: 'auto_play', enabled: true }));
 ```
-Welcome to llmud!
-Enter your name: Alice
-> look
-You are in a small, dimly lit room. Exits: north.
-> say Hello, world!
-Alice says: Hello, world!
-```
-
-## Development
-
-- Recommended workflow:
-  - Fork the repository
-  - Create a feature branch: `git checkout -b feat/my-feature`
-  - Run code linters and formatters before committing
-  - Add tests for new features
-
-- Common commands (replace with project-specific commands):
-  - Build: `make build` or `go build` / `cargo build` / `npm run build`
-  - Run: `make run` or `./run.sh`
-  - Lint: `make lint`
-
-Tell me the language and toolchain used in the repo and I will populate the commands exactly.
-
-## Testing
-
-- Run unit tests:
-  ```
-  make test
-  ```
-  or the appropriate test command for the language:
-  - Go: `go test ./...`
-  - Rust: `cargo test`
-  - Python: `pytest`
-  - Node: `npm test`
-
-Add CI instructions (GitHub Actions, etc.) if you want automated checks; I can scaffold a workflow file.
 
 ## Contributing
 
-Contributions are welcome!
-
-- Please open an issue to discuss significant changes before sending a pull request.
-- Follow these steps:
-  1. Fork the repository
-  2. Create a branch: `git checkout -b fix/issue-123`
-  3. Commit your changes with clear messages
-  4. Push to your fork and open a PR against `main` (or the project's default branch)
-- Include tests for new behavior and ensure all tests pass locally.
-
-Optionally add a CONTRIBUTING.md with more detail — I can draft that file for you.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `pytest`
+5. Submit a pull request
 
 ## License
 
-Specify the project license here (e.g., MIT, Apache-2.0). Example:
+MIT License - see LICENSE file
 
-```
-This repository is available under the MIT License. See LICENSE for details.
-```
+## Acknowledgments
 
-If you tell me which license you prefer, I can add the full LICENSE file.
-
-## Contact
-
-Maintainer: balbekov  
-Project: https://github.com/balbekov/llmud
+- [DuneMUD](https://dunemud.net) - The MUD this client is designed for
+- [Frank Herbert's Dune](https://en.wikipedia.org/wiki/Dune_(novel)) - The universe that inspired the game
+- Anthropic and OpenAI for LLM APIs
 
 ---
 
-If you'd like, I can now:
-- Inspect the repository to detect language(s), existing build scripts, config files, and examples, and update this README with exact commands and examples, or
-- Add additional files (CONTRIBUTING.md, LICENSE, CODE_OF_CONDUCT.md) tailored to your preferences. Tell me which you'd prefer and I'll proceed.
+*"The mystery of life isn't a problem to solve, but a reality to experience."* - Frank Herbert, Dune
