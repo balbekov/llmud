@@ -8,16 +8,18 @@ __version__ = "0.1.0"
 
 from .telnet_client import TelnetClient
 from .gmcp_handler import GMCPHandler
-from .game_state import GameState
+from .game_state import GameState, GamePhase
 from .context_manager import ContextManager
 from .llm_agent import LLMAgent
-from .mud_session import MUDSession
+from .mud_session import MUDSession, SessionConfig
 
 __all__ = [
     "TelnetClient",
     "GMCPHandler", 
     "GameState",
+    "GamePhase",
     "ContextManager",
     "LLMAgent",
     "MUDSession",
+    "SessionConfig",
 ]
