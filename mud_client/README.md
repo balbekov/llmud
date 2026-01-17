@@ -9,6 +9,7 @@ A Python package for connecting to MUDs (Multi-User Dungeons) with LLM-driven ga
 - **Context Management**: Smart context window management to keep strategy in focus while rotating game data
 - **Game State Tracking**: Automatic parsing of game output and GMCP data
 - **Session Management**: High-level orchestration of gameplay
+- **Mapping Agent**: LLM-powered automatic world mapping with pathfinding
 
 ## Installation
 
@@ -108,6 +109,81 @@ context.update_current_room({"name": "...", "exits": [...]})
 prompt = context.build_user_prompt("Kill mobs for experience")
 ```
 
+### MapAgent
+
+LLM-powered mapping agent that builds and maintains a world map:
+
+```python
+from llmud import MapAgent
+
+# Create a mapping agent
+agent = MapAgent(
+    provider="anthropic",
+    api_key="your_api_key",
+    map_path="world_map.json",  # Auto-saves here
+    auto_save=True,
+)
+
+# Update from GMCP room data
+agent.update_from_gmcp(
+    room_id="room123",
+    room_name="Town Square",
+    area="Arrakeen",
+    environment="city",
+    exits={"n": "room124", "s": "room125"},
+)
+
+# Find routes
+route = agent.get_route_to("shop")  # By tag
+route = agent.get_route_to("room456")  # By ID
+
+# Use LLM to analyze room descriptions
+results = await agent.analyze_room_text(room_description)
+
+# Get map data for visualization
+map_data = agent.get_map_data_for_visualization()
+```
+
+### MapGraph
+
+Graph data structure for the world map:
+
+```python
+from llmud import MapGraph, RoomNode
+
+# Create a map
+world_map = MapGraph(name="dune_world")
+
+# Add rooms
+room = RoomNode(
+    room_id="room1",
+    name="Town Square",
+    area="Arrakeen",
+    description="A bustling town square.",
+    tags=["shop", "safe"],
+)
+world_map.add_room(room)
+
+# Add connections
+world_map.add_edge("room1", "room2", direction="n")
+
+# Pathfinding
+path = world_map.find_path("room1", "room5")  # Returns ["n", "e", "e"]
+route = world_map.get_route_commands("room1", "room5")  # Returns "n;2e"
+
+# Find rooms by tag
+shops = world_map.find_rooms_by_tag("shop")
+nearest = world_map.find_nearest_by_tag("room1", "inn")
+
+# Persistence
+world_map.save_json("map.json")
+loaded = MapGraph.load_json("map.json")
+
+# Export for visualization
+world_map.auto_layout()  # Calculate positions
+dot_format = agent.export_graphviz()  # Export as DOT
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -129,6 +205,11 @@ prompt = context.build_user_prompt("Kill mobs for experience")
 | llm_model | str | "" | Model name (uses defaults if empty) |
 | auto_play | bool | False | Enable AI auto-play |
 | command_delay | float | 2.0 | Seconds between AI commands |
+| map_enabled | bool | True | Enable automatic mapping |
+| map_path | str | "" | Path to save/load map JSON file |
+| map_auto_save | bool | True | Auto-save map on changes |
+| map_images_dir | str | "" | Directory to store room images |
+| map_llm_analysis | bool | False | Use LLM to analyze room descriptions |
 
 ## License
 
