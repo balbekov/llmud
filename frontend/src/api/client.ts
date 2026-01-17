@@ -72,7 +72,42 @@ export async function getActionButtons(sessionId: string): Promise<{ buttons: Ac
   return response.data;
 }
 
-export async function getMap(sessionId: string) {
+export interface MapRoomData {
+  id: string;
+  name: string;
+  area: string;
+  environment: string;
+  x: number;
+  y: number;
+  z: number;
+  exits: Record<string, string>;
+  tags: string[];
+  visit_count: number;
+  is_current: boolean;
+  has_items: boolean;
+  has_npcs: boolean;
+  has_image: boolean;
+}
+
+export interface MapEdgeData {
+  from: string;
+  to: string;
+  direction: string;
+  bidirectional: boolean;
+}
+
+export interface MapDataResponse {
+  rooms: MapRoomData[];
+  edges: MapEdgeData[];
+  current_room_id: string | null;
+  stats: {
+    total_rooms: number;
+    total_edges: number;
+    areas: Record<string, number>;
+  };
+}
+
+export async function getMap(sessionId: string): Promise<MapDataResponse> {
   const response = await api.get(`/api/sessions/${sessionId}/map`);
   return response.data;
 }

@@ -48,10 +48,35 @@ export interface MapRoom {
   id: string;
   name: string;
   area: string;
-  exits: string[];
-  visits: number;
-  x?: number;
-  y?: number;
+  environment: string;
+  exits: Record<string, string>;
+  tags: string[];
+  visit_count: number;
+  is_current: boolean;
+  has_items: boolean;
+  has_npcs: boolean;
+  has_image: boolean;
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface MapEdge {
+  from: string;
+  to: string;
+  direction: string;
+  bidirectional: boolean;
+}
+
+export interface MapData {
+  rooms: MapRoom[];
+  edges: MapEdge[];
+  current_room_id: string | null;
+  stats: {
+    total_rooms: number;
+    total_edges: number;
+    areas: Record<string, number>;
+  };
 }
 
 export interface GameMessage {
@@ -86,6 +111,7 @@ export interface GameState {
   messages: GameMessage[];
   
   // Map
+  mapData: MapData | null;
   exploredRooms: MapRoom[];
   
   // Actions
@@ -125,6 +151,7 @@ export interface GameActions {
   clearMessages: () => void;
   
   // Map actions
+  updateMapData: (data: MapData) => void;
   updateExploredRooms: (rooms: MapRoom[]) => void;
   
   // Button actions
@@ -152,6 +179,7 @@ const initialState: GameState = {
   loadingRoomImage: false,
   inCombat: false,
   messages: [],
+  mapData: null,
   exploredRooms: [],
   actionButtons: [],
   showMap: false,
@@ -196,6 +224,7 @@ export const useGameStore = create<GameState & GameActions>((set) => ({
   })),
   clearMessages: () => set({ messages: [] }),
   
+  updateMapData: (data) => set({ mapData: data, exploredRooms: data.rooms }),
   updateExploredRooms: (rooms) => set({ exploredRooms: rooms }),
   
   setActionButtons: (buttons) => set({ actionButtons: buttons }),

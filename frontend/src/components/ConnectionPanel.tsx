@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { createSession, createWebSocket } from '../api/client';
+import { createSession, createWebSocket, getMap } from '../api/client';
 import { Loader2, Power, PowerOff, Bot, BotOff } from 'lucide-react';
 
 export const ConnectionPanel: React.FC = () => {
@@ -21,7 +21,31 @@ export const ConnectionPanel: React.FC = () => {
   const addMessage = useGameStore((state) => state.addMessage);
   const setCurrentRoom = useGameStore((state) => state.setCurrentRoom);
   const setCharacter = useGameStore((state) => state.setCharacter);
+  const updateMapData = useGameStore((state) => state.updateMapData);
   const reset = useGameStore((state) => state.reset);
+  
+  const mapFetchIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // Fetch map data from the server
+  const fetchMapData = useCallback(async (sid: string) => {
+    try {
+      const mapData = await getMap(sid);
+      if (mapData && mapData.rooms) {
+        updateMapData({
+          rooms: mapData.rooms,
+          edges: mapData.edges || [],
+          current_room_id: mapData.current_room_id,
+          stats: mapData.stats || {
+            total_rooms: mapData.rooms.length,
+            total_edges: (mapData.edges || []).length,
+            areas: {},
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch map data:', err);
+    }
+  }, [updateMapData]);
   
   const handleConnect = async () => {
     setConnecting(true);
@@ -46,13 +70,24 @@ export const ConnectionPanel: React.FC = () => {
       
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        handleWebSocketMessage(data);
+        handleWebSocketMessage(data, result.session_id);
       };
       
       ws.onclose = () => {
         addMessage('Disconnected from server', 'system');
         setConnected(false);
+        // Clear map fetch interval
+        if (mapFetchIntervalRef.current) {
+          clearInterval(mapFetchIntervalRef.current);
+          mapFetchIntervalRef.current = null;
+        }
       };
+      
+      // Fetch initial map data and set up periodic refresh
+      await fetchMapData(result.session_id);
+      mapFetchIntervalRef.current = setInterval(() => {
+        fetchMapData(result.session_id);
+      }, 5000); // Refresh map every 5 seconds
       
       ws.onerror = (err) => {
         console.error('WebSocket error:', err);
@@ -69,7 +104,7 @@ export const ConnectionPanel: React.FC = () => {
     }
   };
   
-  const handleWebSocketMessage = (data: any) => {
+  const handleWebSocketMessage = (data: any, sid: string) => {
     switch (data.type) {
       case 'text':
         addMessage(data.data.text, 'text');
@@ -109,6 +144,11 @@ export const ConnectionPanel: React.FC = () => {
           }
         }
         break;
+      
+      case 'map_update':
+        // Fetch fresh map data when a map update event is received
+        fetchMapData(sid);
+        break;
         
       case 'chat':
         addMessage(`[${data.data.channel}] ${data.data.talker}: ${data.data.text}`, 'chat');
@@ -125,6 +165,11 @@ export const ConnectionPanel: React.FC = () => {
   };
   
   const handleDisconnect = () => {
+    // Clear map fetch interval
+    if (mapFetchIntervalRef.current) {
+      clearInterval(mapFetchIntervalRef.current);
+      mapFetchIntervalRef.current = null;
+    }
     reset();
     addMessage('Disconnected', 'system');
   };
