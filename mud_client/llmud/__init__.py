@@ -12,8 +12,18 @@ from .game_state import GameState, GamePhase
 from .context_manager import ContextManager
 from .llm_agent import LLMAgent
 from .mud_session import MUDSession, SessionConfig
+from .map_graph import (
+    MapGraph,
+    RoomNode,
+    RoomItem,
+    RoomNPC,
+    MapEdge,
+    Direction,
+)
+from .map_agent import MapAgent, MappingContext, MapUpdateResult
 
 __all__ = [
+    # Core components
     "TelnetClient",
     "GMCPHandler", 
     "GameState",
@@ -22,4 +32,14 @@ __all__ = [
     "LLMAgent",
     "MUDSession",
     "SessionConfig",
+    # Mapping components
+    "MapGraph",
+    "RoomNode",
+    "RoomItem",
+    "RoomNPC",
+    "MapEdge",
+    "Direction",
+    "MapAgent",
+    "MappingContext",
+    "MapUpdateResult",
 ]

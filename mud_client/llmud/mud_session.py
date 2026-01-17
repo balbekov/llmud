@@ -15,6 +15,7 @@ from .gmcp_handler import GMCPHandler
 from .game_state import GameState, GamePhase
 from .context_manager import ContextManager
 from .llm_agent import LLMAgent, LLMResponse
+from .map_agent import MapAgent
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,12 @@ class SessionConfig:
     llm_model: str = ""
     auto_play: bool = False
     command_delay: float = 2.0  # Seconds between AI commands
+    # Mapping configuration
+    map_enabled: bool = True
+    map_path: str = ""  # Path to save/load map (JSON)
+    map_auto_save: bool = True
+    map_images_dir: str = ""  # Directory for room images
+    map_llm_analysis: bool = False  # Use LLM to analyze room text
 
 
 @dataclass
@@ -64,6 +71,18 @@ class MUDSession:
         # LLM agent (lazy loaded)
         self._agent: Optional[LLMAgent] = None
         
+        # Map agent (initialized if mapping enabled)
+        self.map_agent: Optional[MapAgent] = None
+        if config.map_enabled:
+            self.map_agent = MapAgent(
+                provider=config.llm_provider,
+                api_key=config.llm_api_key or None,
+                model=config.llm_model or None,
+                map_path=config.map_path or None,
+                auto_save=config.map_auto_save,
+                images_dir=config.map_images_dir or None,
+            )
+        
         # Session state
         self._running = False
         self._auto_mode = config.auto_play
@@ -74,6 +93,9 @@ class MUDSession:
         
         # Command queue for manual commands
         self._command_queue: asyncio.Queue[str] = asyncio.Queue()
+        
+        # Track last movement direction for mapping
+        self._last_movement_direction: Optional[str] = None
         
         # Register internal callbacks
         self._setup_callbacks()
@@ -175,6 +197,32 @@ class MUDSession:
         # Update world map in context
         self.context.update_world_map(self.state.world_map)
         
+        # Update map agent
+        if self.map_agent:
+            # Record movement if we have a previous direction
+            if self._last_movement_direction:
+                self.map_agent.record_movement(
+                    self._last_movement_direction,
+                    room.num
+                )
+                self._last_movement_direction = None
+            
+            # Update from GMCP data
+            self.map_agent.update_from_gmcp(
+                room_id=room.num,
+                room_name=room.name,
+                area=room.area,
+                environment=room.environment,
+                exits=room.exits,  # This is a dict from GMCP
+            )
+            
+            # Emit map update event
+            self._emit_event("map_update", {
+                "room_id": room.num,
+                "room_name": room.name,
+                "map_stats": self.map_agent.get_map_stats(),
+            })
+        
         # Emit state change
         self._emit_event("state_change", {
             "type": "room",
@@ -211,6 +259,24 @@ class MUDSession:
         
         # Record command
         self.state.record_command(command)
+        
+        # Track movement direction for mapping
+        movement_commands = {
+            "n", "s", "e", "w", "ne", "nw", "se", "sw", "u", "d",
+            "north", "south", "east", "west", "up", "down",
+            "northeast", "northwest", "southeast", "southwest",
+            "enter", "out",
+        }
+        cmd_lower = command.lower().strip()
+        if cmd_lower in movement_commands:
+            # Normalize to short form
+            direction_map = {
+                "north": "n", "south": "s", "east": "e", "west": "w",
+                "up": "u", "down": "d",
+                "northeast": "ne", "northwest": "nw",
+                "southeast": "se", "southwest": "sw",
+            }
+            self._last_movement_direction = direction_map.get(cmd_lower, cmd_lower)
         
         # Send to MUD
         await self.telnet.send(command)
@@ -327,7 +393,7 @@ class MUDSession:
 
     def get_state(self) -> dict:
         """Get current session state."""
-        return {
+        state = {
             "connected": self.telnet.connected,
             "phase": self.state.phase.name,
             "auto_mode": self._auto_mode,
@@ -338,6 +404,14 @@ class MUDSession:
             "navigation": self.state.get_navigation_context(),
             "world_map_size": len(self.state.world_map),
         }
+        
+        # Add map agent info if available
+        if self.map_agent:
+            state["map"] = self.map_agent.get_map_stats()
+            state["current_room_info"] = self.map_agent.get_current_room_info()
+            state["adjacent_rooms"] = self.map_agent.get_adjacent_rooms_info()
+        
+        return state
 
     def get_action_buttons(self) -> list[dict]:
         """Get current action buttons."""
@@ -376,8 +450,12 @@ class MUDSession:
         
         return buttons
 
-    def get_map_data(self) -> list[dict]:
+    def get_map_data(self) -> dict:
         """Get world map data for visualization."""
+        if self.map_agent:
+            return self.map_agent.get_map_data_for_visualization()
+        
+        # Fallback to basic game state map
         rooms = []
         for room_id, room in self.state.world_map.items():
             rooms.append({
@@ -387,4 +465,74 @@ class MUDSession:
                 "exits": room.exits,
                 "visits": room.visit_count,
             })
-        return rooms
+        return {"rooms": rooms, "edges": [], "current_room_id": None}
+    
+    # ==================== Map Operations ====================
+    
+    def get_route_to(self, destination: str) -> Optional[dict]:
+        """Get route to a destination room, name, or tag."""
+        if not self.map_agent:
+            return None
+        return self.map_agent.get_route_to(destination)
+    
+    def save_map(self, path: Optional[str] = None) -> bool:
+        """Save the current map to disk."""
+        if not self.map_agent:
+            return False
+        return self.map_agent.save_map(path)
+    
+    def load_map(self, path: Optional[str] = None) -> bool:
+        """Load a map from disk."""
+        if not self.map_agent:
+            return False
+        return self.map_agent.load_map(path)
+    
+    async def analyze_current_room(self) -> list:
+        """Use LLM to analyze the current room text and update map."""
+        if not self.map_agent:
+            return []
+        
+        if not self.config.map_llm_analysis:
+            return []
+        
+        # Get recent room text from output history
+        room_text = self.state.get_recent_context(20)
+        
+        return await self.map_agent.analyze_room_text(room_text)
+    
+    def find_nearest(self, tag: str) -> Optional[dict]:
+        """Find the nearest room with a specific tag (shop, inn, bank, etc.)."""
+        if not self.map_agent:
+            return None
+        
+        result = self.map_agent._tool_find_nearest_tagged(tag)
+        if result.success:
+            return result.data
+        return None
+    
+    def add_room_tag(self, room_id: str, tag: str) -> bool:
+        """Add a tag to a room."""
+        if not self.map_agent:
+            return False
+        result = self.map_agent._tool_add_room_tag(room_id, tag)
+        return result.success
+    
+    def add_room_note(self, room_id: str, note: str) -> bool:
+        """Add a note to a room."""
+        if not self.map_agent:
+            return False
+        result = self.map_agent._tool_add_room_note(room_id, note)
+        return result.success
+    
+    def set_room_image(self, room_id: str, image_path: str, prompt: str = "") -> bool:
+        """Set the image path for a room."""
+        if not self.map_agent:
+            return False
+        result = self.map_agent._tool_set_room_image(room_id, image_path, prompt)
+        return result.success
+    
+    def export_map_graphviz(self) -> Optional[str]:
+        """Export the map as Graphviz DOT format."""
+        if not self.map_agent:
+            return None
+        return self.map_agent.export_graphviz()
