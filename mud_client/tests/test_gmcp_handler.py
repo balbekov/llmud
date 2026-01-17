@@ -557,6 +557,225 @@ class TestWimpyAttributeSync:
         assert callback_data["wimpy_dir"] == "east"
 
 
+class TestSyncVerification:
+    """Tests for sync verification helper methods."""
+    
+    def test_has_received_false_initially(self):
+        """Test has_received returns False before any data."""
+        handler = GMCPHandler()
+        assert handler.has_received("Char.Vitals") is False
+        assert handler.has_received("Char.Status") is False
+        assert handler.has_received("Room.Info") is False
+    
+    def test_has_received_true_after_processing(self):
+        """Test has_received returns True after processing."""
+        handler = GMCPHandler()
+        handler.process("Char.Vitals", {"hp": 100})
+        
+        assert handler.has_received("Char.Vitals") is True
+        assert handler.has_received("Char.Status") is False
+    
+    def test_has_vitals_helper(self):
+        """Test has_vitals helper method."""
+        handler = GMCPHandler()
+        assert handler.has_vitals() is False
+        
+        handler.process("Char.Vitals", {"hp": 50})
+        assert handler.has_vitals() is True
+    
+    def test_has_status_helper(self):
+        """Test has_status helper method."""
+        handler = GMCPHandler()
+        assert handler.has_status() is False
+        
+        handler.process("Char.Status", {"level": 5})
+        assert handler.has_status() is True
+    
+    def test_has_room_info_helper(self):
+        """Test has_room_info helper method."""
+        handler = GMCPHandler()
+        assert handler.has_room_info() is False
+        
+        handler.process("Room.Info", {"num": "room1", "name": "Test"})
+        assert handler.has_room_info() is True
+    
+    def test_get_received_modules(self):
+        """Test getting set of received modules."""
+        handler = GMCPHandler()
+        
+        handler.process("Char.Vitals", {"hp": 100})
+        handler.process("Char.Status", {"level": 10})
+        
+        modules = handler.get_received_modules()
+        assert "Char.Vitals" in modules
+        assert "Char.Status" in modules
+        assert "Room.Info" not in modules
+    
+    def test_get_module_timestamp(self):
+        """Test getting module timestamp."""
+        handler = GMCPHandler()
+        
+        assert handler.get_module_timestamp("Char.Vitals") is None
+        
+        handler.process("Char.Vitals", {"hp": 100})
+        timestamp = handler.get_module_timestamp("Char.Vitals")
+        
+        assert timestamp is not None
+        from datetime import datetime
+        assert isinstance(timestamp, datetime)
+    
+    def test_clear_received_modules(self):
+        """Test clearing received modules."""
+        handler = GMCPHandler()
+        
+        handler.process("Char.Vitals", {"hp": 100})
+        assert handler.has_vitals() is True
+        
+        handler.clear_received_modules()
+        assert handler.has_vitals() is False
+        assert handler.get_received_modules() == set()
+
+
+class TestAttributeAccessHelpers:
+    """Tests for attribute access helper methods."""
+    
+    def test_get_hp(self):
+        """Test get_hp helper."""
+        handler = GMCPHandler()
+        handler.process("Char.Vitals", {"hp": 80, "maxhp": 100})
+        
+        hp, maxhp = handler.get_hp()
+        assert hp == 80
+        assert maxhp == 100
+    
+    def test_get_sp(self):
+        """Test get_sp helper."""
+        handler = GMCPHandler()
+        handler.process("Char.Vitals", {"sp": 60, "maxsp": 80})
+        
+        sp, maxsp = handler.get_sp()
+        assert sp == 60
+        assert maxsp == 80
+    
+    def test_get_wimpy(self):
+        """Test get_wimpy helper."""
+        handler = GMCPHandler()
+        handler.process("Char.Status", {"wimpy": 25, "wimpy_dir": "north"})
+        
+        wimpy, wimpy_dir = handler.get_wimpy()
+        assert wimpy == 25
+        assert wimpy_dir == "north"
+    
+    def test_get_aim(self):
+        """Test get_aim helper."""
+        handler = GMCPHandler()
+        handler.process("Char.Status", {"aim": "head"})
+        
+        assert handler.get_aim() == "head"
+    
+    def test_get_level(self):
+        """Test get_level helper."""
+        handler = GMCPHandler()
+        handler.process("Char.Status", {"level": 15})
+        
+        assert handler.get_level() == 15
+    
+    def test_get_money(self):
+        """Test get_money helper."""
+        handler = GMCPHandler()
+        handler.process("Char.Status", {"money": 1000, "bankmoney": 5000})
+        
+        money, bank = handler.get_money()
+        assert money == 1000
+        assert bank == 5000
+    
+    def test_get_xp(self):
+        """Test get_xp helper."""
+        handler = GMCPHandler()
+        handler.process("Char.Status", {"xp": 25000, "maxxp": 50000})
+        
+        xp, maxxp = handler.get_xp()
+        assert xp == 25000
+        assert maxxp == 50000
+    
+    def test_get_combat_stats(self):
+        """Test get_combat_stats helper."""
+        handler = GMCPHandler()
+        handler.process("Char.Vitals", {"hp": 80, "maxhp": 100, "sp": 50, "maxsp": 100})
+        handler.process("Char.Status", {"wimpy": 20, "wimpy_dir": "south", "aim": "torso"})
+        
+        stats = handler.get_combat_stats()
+        
+        assert stats["hp"] == 80
+        assert stats["maxhp"] == 100
+        assert stats["hp_percent"] == 80.0
+        assert stats["sp"] == 50
+        assert stats["maxsp"] == 100
+        assert stats["sp_percent"] == 50.0
+        assert stats["wimpy"] == 20
+        assert stats["wimpy_dir"] == "south"
+        assert stats["aim"] == "torso"
+
+
+class TestMutableAttributeCommands:
+    """Tests for mutable attribute command generators."""
+    
+    def test_cmd_set_wimpy_value_only(self):
+        """Test wimpy command with value only."""
+        cmd = GMCPHandler.cmd_set_wimpy(25)
+        assert cmd == "wimpy 25"
+    
+    def test_cmd_set_wimpy_with_direction(self):
+        """Test wimpy command with value and direction."""
+        cmd = GMCPHandler.cmd_set_wimpy(30, "north")
+        assert cmd == "wimpy 30 north"
+    
+    def test_cmd_set_aim(self):
+        """Test aim command."""
+        cmd = GMCPHandler.cmd_set_aim("head")
+        assert cmd == "aim head"
+    
+    def test_cmd_clear_aim(self):
+        """Test clear aim command."""
+        cmd = GMCPHandler.cmd_clear_aim()
+        assert cmd == "aim clear"
+
+
+class TestAimAttributeSync:
+    """Tests specifically for aim attribute synchronization."""
+    
+    def test_aim_initial_state(self):
+        """Test aim starts empty."""
+        handler = GMCPHandler()
+        assert handler.character.status.aim == ""
+    
+    def test_aim_update_from_gmcp(self):
+        """Test aim is updated from GMCP message."""
+        handler = GMCPHandler()
+        
+        handler.process("Char.Status", {"aim": "head"})
+        assert handler.character.status.aim == "head"
+        
+        handler.process("Char.Status", {"aim": "torso"})
+        assert handler.character.status.aim == "torso"
+    
+    def test_aim_in_state_summary(self):
+        """Test aim is included in state summary."""
+        handler = GMCPHandler()
+        handler.process("Char.Status", {"aim": "legs"})
+        
+        summary = handler.get_state_summary()
+        assert summary["character"]["aim"] == "legs"
+    
+    def test_aim_in_combat_stats(self):
+        """Test aim is included in combat stats."""
+        handler = GMCPHandler()
+        handler.process("Char.Status", {"aim": "arms"})
+        
+        stats = handler.get_combat_stats()
+        assert stats["aim"] == "arms"
+
+
 class TestVitalsAttributeSync:
     """Tests specifically for vitals (HP/CP) attribute synchronization."""
     

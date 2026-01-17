@@ -126,6 +126,10 @@ class GMCPHandler:
         # Guild-specific data
         self.guild_data: dict[str, Any] = {}
         
+        # Track which modules have received data (for sync verification)
+        self._received_modules: set[str] = set()
+        self._module_timestamps: dict[str, datetime] = {}
+        
         # Callbacks for state changes
         self._on_vitals_change: Optional[Callable] = None
         self._on_room_change: Optional[Callable] = None
@@ -151,6 +155,10 @@ class GMCPHandler:
     def process(self, module: str, data: Any) -> None:
         """Process a GMCP message and update state."""
         logger.debug(f"Processing GMCP: {module}")
+        
+        # Track received modules for sync verification
+        self._received_modules.add(module)
+        self._module_timestamps[module] = datetime.now()
         
         # Route to appropriate handler
         if module == "Char.Name":
@@ -233,6 +241,8 @@ class GMCPHandler:
                 status.wimpy = data["wimpy"]
             if "wimpy_dir" in data:
                 status.wimpy_dir = data["wimpy_dir"]
+            if "aim" in data:
+                status.aim = data["aim"]
             if "quest_points" in data:
                 status.quest_points = data["quest_points"]
             if "kills" in data:
@@ -310,6 +320,8 @@ class GMCPHandler:
                 "money": self.character.status.money,
                 "bank": self.character.status.bankmoney,
                 "wimpy": self.character.status.wimpy,
+                "wimpy_dir": self.character.status.wimpy_dir,
+                "aim": self.character.status.aim,
             },
             "room": {
                 "name": self.room.name,
@@ -326,3 +338,132 @@ class GMCPHandler:
                 "qui": self.character.maxstats.maxqui or self.character.stats.qui,
             }
         }
+
+    # ==================== Sync Verification Methods ====================
+
+    def has_received(self, module: str) -> bool:
+        """Check if a specific GMCP module has been received.
+        
+        Args:
+            module: The GMCP module name (e.g., "Char.Vitals", "Char.Status")
+            
+        Returns:
+            True if the module has been received at least once.
+        """
+        return module in self._received_modules
+
+    def has_vitals(self) -> bool:
+        """Check if character vitals have been received."""
+        return self.has_received("Char.Vitals")
+
+    def has_status(self) -> bool:
+        """Check if character status has been received."""
+        return self.has_received("Char.Status")
+
+    def has_room_info(self) -> bool:
+        """Check if room info has been received."""
+        return self.has_received("Room.Info")
+
+    def get_received_modules(self) -> set[str]:
+        """Get the set of all GMCP modules that have been received."""
+        return self._received_modules.copy()
+
+    def get_module_timestamp(self, module: str) -> Optional[datetime]:
+        """Get the timestamp when a module was last received.
+        
+        Args:
+            module: The GMCP module name
+            
+        Returns:
+            Datetime when the module was last received, or None if never received.
+        """
+        return self._module_timestamps.get(module)
+
+    def clear_received_modules(self) -> None:
+        """Clear the tracking of received modules.
+        
+        Useful for testing sync behavior after mutations.
+        """
+        self._received_modules.clear()
+        self._module_timestamps.clear()
+
+    # ==================== Attribute Access Helpers ====================
+
+    def get_hp(self) -> tuple[int, int]:
+        """Get current HP and max HP as a tuple."""
+        return (self.character.vitals.hp, self.character.vitals.maxhp)
+
+    def get_sp(self) -> tuple[int, int]:
+        """Get current SP (Command Points) and max SP as a tuple."""
+        return (self.character.vitals.sp, self.character.vitals.maxsp)
+
+    def get_wimpy(self) -> tuple[int, str]:
+        """Get current wimpy value and direction as a tuple."""
+        return (self.character.status.wimpy, self.character.status.wimpy_dir)
+
+    def get_aim(self) -> str:
+        """Get current aim target."""
+        return self.character.status.aim
+
+    def get_level(self) -> int:
+        """Get character level."""
+        return self.character.status.level
+
+    def get_money(self) -> tuple[int, int]:
+        """Get money on hand and in bank as a tuple."""
+        return (self.character.status.money, self.character.status.bankmoney)
+
+    def get_xp(self) -> tuple[int, int]:
+        """Get current XP and max XP as a tuple."""
+        return (self.character.status.xp, self.character.status.maxxp)
+
+    def get_combat_stats(self) -> dict:
+        """Get combat-relevant stats summary."""
+        return {
+            "hp": self.character.vitals.hp,
+            "maxhp": self.character.vitals.maxhp,
+            "hp_percent": self.character.vitals.hp_percent,
+            "sp": self.character.vitals.sp,
+            "maxsp": self.character.vitals.maxsp,
+            "sp_percent": self.character.vitals.sp_percent,
+            "wimpy": self.character.status.wimpy,
+            "wimpy_dir": self.character.status.wimpy_dir,
+            "aim": self.character.status.aim,
+        }
+
+    # ==================== Mutable Attribute Commands ====================
+    # These methods return the MUD command strings needed to change attributes.
+    # The actual mutation happens by sending these commands to the server,
+    # then verifying the sync via GMCP callbacks.
+
+    @staticmethod
+    def cmd_set_wimpy(value: int, direction: str = "") -> str:
+        """Get command to set wimpy value.
+        
+        Args:
+            value: Wimpy percentage (0-100)
+            direction: Optional flee direction
+            
+        Returns:
+            MUD command string
+        """
+        if direction:
+            return f"wimpy {value} {direction}"
+        return f"wimpy {value}"
+
+    @staticmethod
+    def cmd_set_aim(target: str) -> str:
+        """Get command to set aim target.
+        
+        Args:
+            target: Target body part (e.g., "head", "torso", "legs")
+            
+        Returns:
+            MUD command string
+        """
+        return f"aim {target}"
+
+    @staticmethod
+    def cmd_clear_aim() -> str:
+        """Get command to clear aim target."""
+        return "aim clear"
