@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 # Reduce noise from other loggers
 logging.getLogger('asyncio').setLevel(logging.WARNING)
 
-from llmud import TelnetClient, GMCPHandler
+from llmud import TelnetClient
+from llmud.gmcp_handler import GMCPHandler
 
 
 class GMCPAttributeTester:
@@ -172,26 +173,33 @@ class GMCPAttributeTester:
         """
         results = {
             "initial_wimpy": None,
+            "initial_wimpy_dir": None,
             "target_wimpy": self.target_wimpy,
             "command_sent": False,
             "sync_confirmed": False,
             "final_wimpy": None,
+            "final_wimpy_dir": None,
         }
         
-        # Record initial wimpy value
-        self.initial_wimpy = self.gmcp.character.status.wimpy
+        # Record initial wimpy value using helper method
+        self.initial_wimpy, initial_dir = self.gmcp.get_wimpy()
         results["initial_wimpy"] = self.initial_wimpy
-        logger.info(f"Initial wimpy: {self.initial_wimpy}")
+        results["initial_wimpy_dir"] = initial_dir
+        logger.info(f"Initial wimpy: {self.initial_wimpy} (direction: {initial_dir})")
         
         # Choose a different target if initial is already our target
         if self.initial_wimpy == self.target_wimpy:
             self.target_wimpy = 30 if self.initial_wimpy != 30 else 20
             results["target_wimpy"] = self.target_wimpy
         
-        # Send wimpy command
-        logger.info(f"Setting wimpy to {self.target_wimpy}...")
+        # Clear received modules to track fresh sync
+        self.gmcp.clear_received_modules()
+        
+        # Generate and send wimpy command using helper method
+        wimpy_cmd = GMCPHandler.cmd_set_wimpy(self.target_wimpy)
+        logger.info(f"Setting wimpy to {self.target_wimpy} with command: {wimpy_cmd}")
         self.wimpy_changed = True
-        await self.send_and_wait(f"wimpy {self.target_wimpy}", 3.0)
+        await self.send_and_wait(wimpy_cmd, 3.0)
         results["command_sent"] = True
         
         # Wait for GMCP update
@@ -200,14 +208,74 @@ class GMCPAttributeTester:
             await self.telnet.receive()
             await asyncio.sleep(0.2)
         
-        # Check if sync was confirmed
+        # Check if sync was confirmed using helper methods
         results["sync_confirmed"] = self.wimpy_synced
-        results["final_wimpy"] = self.gmcp.character.status.wimpy
+        final_wimpy, final_dir = self.gmcp.get_wimpy()
+        results["final_wimpy"] = final_wimpy
+        results["final_wimpy_dir"] = final_dir
+        
+        # Check if Char.Status was received after mutation
+        status_received_after = self.gmcp.has_status()
+        logger.info(f"Char.Status received after mutation: {status_received_after}")
         
         # Restore original wimpy
         if self.initial_wimpy is not None and self.initial_wimpy != self.target_wimpy:
-            logger.info(f"Restoring wimpy to {self.initial_wimpy}...")
-            await self.send_and_wait(f"wimpy {self.initial_wimpy}", 2.0)
+            restore_cmd = GMCPHandler.cmd_set_wimpy(self.initial_wimpy)
+            logger.info(f"Restoring wimpy to {self.initial_wimpy} with command: {restore_cmd}")
+            await self.send_and_wait(restore_cmd, 2.0)
+        
+        return results
+
+    async def test_aim_mutation(self) -> dict:
+        """
+        Test aim attribute mutation and sync.
+        
+        This tests that:
+        1. We can read the current aim value from GMCP
+        2. We can send a command to change aim
+        3. The server reports the new aim value back via GMCP
+        """
+        results = {
+            "initial_aim": None,
+            "target_aim": "head",
+            "command_sent": False,
+            "sync_received": False,
+            "final_aim": None,
+        }
+        
+        # Record initial aim value using helper method
+        initial_aim = self.gmcp.get_aim()
+        results["initial_aim"] = initial_aim
+        logger.info(f"Initial aim: {initial_aim}")
+        
+        # Choose a different target aim
+        if initial_aim == "head":
+            results["target_aim"] = "torso"
+        
+        # Clear received modules to track fresh sync
+        self.gmcp.clear_received_modules()
+        
+        # Generate and send aim command
+        aim_cmd = GMCPHandler.cmd_set_aim(results["target_aim"])
+        logger.info(f"Setting aim to {results['target_aim']} with command: {aim_cmd}")
+        await self.send_and_wait(aim_cmd, 2.0)
+        results["command_sent"] = True
+        
+        # Wait for GMCP update
+        await asyncio.sleep(1.0)
+        for _ in range(5):
+            await self.telnet.receive()
+            await asyncio.sleep(0.2)
+        
+        # Check final aim
+        final_aim = self.gmcp.get_aim()
+        results["final_aim"] = final_aim
+        results["sync_received"] = self.gmcp.has_status()
+        
+        # Clear aim (restore to no target)
+        clear_cmd = GMCPHandler.cmd_clear_aim()
+        logger.info(f"Clearing aim with command: {clear_cmd}")
+        await self.send_and_wait(clear_cmd, 1.0)
         
         return results
     
@@ -220,6 +288,7 @@ class GMCPAttributeTester:
             "vitals_received": False,
             "status_received": False,
             "wimpy_mutation_test": {},
+            "aim_mutation_test": {},
             "attribute_summary": {},
             "gmcp_messages_count": 0,
             "issues": [],
@@ -290,6 +359,12 @@ class GMCPAttributeTester:
             logger.info("="*60)
             results["wimpy_mutation_test"] = await self.test_wimpy_mutation()
             
+            # Run aim mutation test
+            logger.info("\n" + "="*60)
+            logger.info("RUNNING AIM MUTATION TEST")
+            logger.info("="*60)
+            results["aim_mutation_test"] = await self.test_aim_mutation()
+            
             if not results["wimpy_mutation_test"]["sync_confirmed"]:
                 results["issues"].append(
                     f"Wimpy sync failed: sent {results['wimpy_mutation_test']['target_wimpy']}, "
@@ -331,6 +406,12 @@ class GMCPAttributeTester:
             logger.info(f"  Target: {results['wimpy_mutation_test'].get('target_wimpy')}")
             logger.info(f"  Final: {results['wimpy_mutation_test'].get('final_wimpy')}")
             logger.info(f"  Sync Confirmed: {results['wimpy_mutation_test'].get('sync_confirmed')}")
+            
+            logger.info(f"\nAim Mutation Test:")
+            logger.info(f"  Initial: {results['aim_mutation_test'].get('initial_aim')}")
+            logger.info(f"  Target: {results['aim_mutation_test'].get('target_aim')}")
+            logger.info(f"  Final: {results['aim_mutation_test'].get('final_aim')}")
+            logger.info(f"  Sync Received: {results['aim_mutation_test'].get('sync_received')}")
             
             # Print all GMCP message types received
             gmcp_types = set(m["module"] for m in self.gmcp_messages)
@@ -374,6 +455,13 @@ async def main():
     print(f"  Target Wimpy: {wmt.get('target_wimpy')}")
     print(f"  Final Wimpy: {wmt.get('final_wimpy')}")
     print(f"  Sync Confirmed: {wmt.get('sync_confirmed')}")
+    
+    print("\nAim Mutation Test:")
+    amt = results.get('aim_mutation_test', {})
+    print(f"  Initial Aim: {amt.get('initial_aim')}")
+    print(f"  Target Aim: {amt.get('target_aim')}")
+    print(f"  Final Aim: {amt.get('final_aim')}")
+    print(f"  Sync Received: {amt.get('sync_received')}")
     
     if results.get('attribute_summary'):
         print("\nAttribute Summary:")
