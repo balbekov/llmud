@@ -1,0 +1,452 @@
+{
+  "name": "world",
+  "version": "1.0",
+  "created_at": "2026-01-17T22:24:16.353075",
+  "last_modified": "2026-01-17T22:24:37.304329",
+  "current_room_id": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+  "rooms": {
+    "af3c8e77ba1a6f27e79ffb69f9b03abc": {
+      "room_id": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "name": "North Paul Street",
+      "area": "caladan",
+      "environment": "outdoors",
+      "description": "",
+      "exits": {
+        "west": "0886a1743230b88efd2102ba0ceb6641",
+        "northeast": "6f42f5161ea07f3165bbf18c01ceb6d3",
+        "south": "52164e3cd745c1040e279394bff1f44d",
+        "north": "d71af6ab78c572da8d571296a2dc0493",
+        "n": "d71af6ab78c572da8d571296a2dc0493",
+        "w": "0886a1743230b88efd2102ba0ceb6641"
+      },
+      "items": [],
+      "npcs": [],
+      "tags": [],
+      "notes": "",
+      "visit_count": 3,
+      "first_visited": "2026-01-17T22:24:20.687862",
+      "last_visited": "2026-01-17T22:24:37.301667",
+      "image_path": null,
+      "image_prompt": null,
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "0886a1743230b88efd2102ba0ceb6641": {
+      "room_id": "0886a1743230b88efd2102ba0ceb6641",
+      "name": "A general paper shop",
+      "area": "caladan",
+      "environment": "indoors",
+      "description": "",
+      "exits": {
+        "e": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+        "east": "af3c8e77ba1a6f27e79ffb69f9b03abc"
+      },
+      "items": [],
+      "npcs": [],
+      "tags": [],
+      "notes": "",
+      "visit_count": 1,
+      "first_visited": "2026-01-17T22:24:20.688126",
+      "last_visited": "2026-01-17T22:24:34.380246",
+      "image_path": null,
+      "image_prompt": null,
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "6f42f5161ea07f3165bbf18c01ceb6d3": {
+      "room_id": "6f42f5161ea07f3165bbf18c01ceb6d3",
+      "name": "Room 6f42f5161ea07f3165bbf18c01ceb6d3",
+      "area": "",
+      "environment": "",
+      "description": "",
+      "exits": {
+        "sw": "af3c8e77ba1a6f27e79ffb69f9b03abc"
+      },
+      "items": [],
+      "npcs": [],
+      "tags": [],
+      "notes": "",
+      "visit_count": 0,
+      "first_visited": "2026-01-17T22:24:20.688377",
+      "last_visited": "2026-01-17T22:24:20.688377",
+      "image_path": null,
+      "image_prompt": null,
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "52164e3cd745c1040e279394bff1f44d": {
+      "room_id": "52164e3cd745c1040e279394bff1f44d",
+      "name": "Room 52164e3cd745c1040e279394bff1f44d",
+      "area": "",
+      "environment": "",
+      "description": "",
+      "exits": {
+        "n": "af3c8e77ba1a6f27e79ffb69f9b03abc"
+      },
+      "items": [],
+      "npcs": [],
+      "tags": [],
+      "notes": "",
+      "visit_count": 0,
+      "first_visited": "2026-01-17T22:24:20.689105",
+      "last_visited": "2026-01-17T22:24:20.689105",
+      "image_path": null,
+      "image_prompt": null,
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "d71af6ab78c572da8d571296a2dc0493": {
+      "room_id": "d71af6ab78c572da8d571296a2dc0493",
+      "name": "North Paul Street",
+      "area": "caladan",
+      "environment": "outdoors",
+      "description": "",
+      "exits": {
+        "s": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+        "west": "722ae811a8cc3b8b7fed8d4000fe7bca",
+        "south": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+        "north": "f15f236afed0b240f60e5ee77e839a28",
+        "n": "f15f236afed0b240f60e5ee77e839a28"
+      },
+      "items": [],
+      "npcs": [],
+      "tags": [],
+      "notes": "",
+      "visit_count": 2,
+      "first_visited": "2026-01-17T22:24:20.689835",
+      "last_visited": "2026-01-17T22:24:29.235966",
+      "image_path": null,
+      "image_prompt": null,
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "722ae811a8cc3b8b7fed8d4000fe7bca": {
+      "room_id": "722ae811a8cc3b8b7fed8d4000fe7bca",
+      "name": "Room 722ae811a8cc3b8b7fed8d4000fe7bca",
+      "area": "",
+      "environment": "",
+      "description": "",
+      "exits": {
+        "e": "d71af6ab78c572da8d571296a2dc0493"
+      },
+      "items": [],
+      "npcs": [],
+      "tags": [],
+      "notes": "",
+      "visit_count": 0,
+      "first_visited": "2026-01-17T22:24:26.711445",
+      "last_visited": "2026-01-17T22:24:26.711445",
+      "image_path": null,
+      "image_prompt": null,
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "f15f236afed0b240f60e5ee77e839a28": {
+      "room_id": "f15f236afed0b240f60e5ee77e839a28",
+      "name": "North Paul Street",
+      "area": "caladan",
+      "environment": "outdoors",
+      "description": "",
+      "exits": {
+        "s": "d71af6ab78c572da8d571296a2dc0493",
+        "east": "062b187d592625f8d2dea75854ca6084",
+        "west": "cca412a5146d8daf5ddc3f5ea7df1ec4",
+        "south": "d71af6ab78c572da8d571296a2dc0493",
+        "north": "14416036d81643187f6351a00474bcdb"
+      },
+      "items": [],
+      "npcs": [],
+      "tags": [],
+      "notes": "",
+      "visit_count": 1,
+      "first_visited": "2026-01-17T22:24:26.712795",
+      "last_visited": "2026-01-17T22:24:27.597187",
+      "image_path": null,
+      "image_prompt": null,
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "062b187d592625f8d2dea75854ca6084": {
+      "room_id": "062b187d592625f8d2dea75854ca6084",
+      "name": "Room 062b187d592625f8d2dea75854ca6084",
+      "area": "",
+      "environment": "",
+      "description": "",
+      "exits": {
+        "w": "f15f236afed0b240f60e5ee77e839a28"
+      },
+      "items": [],
+      "npcs": [],
+      "tags": [],
+      "notes": "",
+      "visit_count": 0,
+      "first_visited": "2026-01-17T22:24:27.597225",
+      "last_visited": "2026-01-17T22:24:27.597225",
+      "image_path": null,
+      "image_prompt": null,
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "cca412a5146d8daf5ddc3f5ea7df1ec4": {
+      "room_id": "cca412a5146d8daf5ddc3f5ea7df1ec4",
+      "name": "Room cca412a5146d8daf5ddc3f5ea7df1ec4",
+      "area": "",
+      "environment": "",
+      "description": "",
+      "exits": {
+        "e": "f15f236afed0b240f60e5ee77e839a28"
+      },
+      "items": [],
+      "npcs": [],
+      "tags": [],
+      "notes": "",
+      "visit_count": 0,
+      "first_visited": "2026-01-17T22:24:27.597909",
+      "last_visited": "2026-01-17T22:24:27.597910",
+      "image_path": null,
+      "image_prompt": null,
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "14416036d81643187f6351a00474bcdb": {
+      "room_id": "14416036d81643187f6351a00474bcdb",
+      "name": "Room 14416036d81643187f6351a00474bcdb",
+      "area": "",
+      "environment": "",
+      "description": "",
+      "exits": {
+        "s": "f15f236afed0b240f60e5ee77e839a28"
+      },
+      "items": [],
+      "npcs": [],
+      "tags": [],
+      "notes": "",
+      "visit_count": 0,
+      "first_visited": "2026-01-17T22:24:27.598547",
+      "last_visited": "2026-01-17T22:24:27.598548",
+      "image_path": null,
+      "image_prompt": null,
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  "edges": [
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "0886a1743230b88efd2102ba0ceb6641",
+      "direction": "west",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "6f42f5161ea07f3165bbf18c01ceb6d3",
+      "direction": "northeast",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "52164e3cd745c1040e279394bff1f44d",
+      "direction": "south",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "d71af6ab78c572da8d571296a2dc0493",
+      "direction": "north",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "d71af6ab78c572da8d571296a2dc0493",
+      "to_room": "722ae811a8cc3b8b7fed8d4000fe7bca",
+      "direction": "west",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "d71af6ab78c572da8d571296a2dc0493",
+      "to_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "direction": "south",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "d71af6ab78c572da8d571296a2dc0493",
+      "to_room": "f15f236afed0b240f60e5ee77e839a28",
+      "direction": "north",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "f15f236afed0b240f60e5ee77e839a28",
+      "to_room": "062b187d592625f8d2dea75854ca6084",
+      "direction": "east",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "f15f236afed0b240f60e5ee77e839a28",
+      "to_room": "cca412a5146d8daf5ddc3f5ea7df1ec4",
+      "direction": "west",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "f15f236afed0b240f60e5ee77e839a28",
+      "to_room": "d71af6ab78c572da8d571296a2dc0493",
+      "direction": "south",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "f15f236afed0b240f60e5ee77e839a28",
+      "to_room": "14416036d81643187f6351a00474bcdb",
+      "direction": "north",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "d71af6ab78c572da8d571296a2dc0493",
+      "to_room": "722ae811a8cc3b8b7fed8d4000fe7bca",
+      "direction": "west",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "d71af6ab78c572da8d571296a2dc0493",
+      "to_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "direction": "south",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "d71af6ab78c572da8d571296a2dc0493",
+      "to_room": "f15f236afed0b240f60e5ee77e839a28",
+      "direction": "north",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "0886a1743230b88efd2102ba0ceb6641",
+      "direction": "west",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "6f42f5161ea07f3165bbf18c01ceb6d3",
+      "direction": "northeast",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "52164e3cd745c1040e279394bff1f44d",
+      "direction": "south",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "d71af6ab78c572da8d571296a2dc0493",
+      "direction": "north",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "0886a1743230b88efd2102ba0ceb6641",
+      "to_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "direction": "east",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "0886a1743230b88efd2102ba0ceb6641",
+      "direction": "west",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "6f42f5161ea07f3165bbf18c01ceb6d3",
+      "direction": "northeast",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "52164e3cd745c1040e279394bff1f44d",
+      "direction": "south",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    },
+    {
+      "from_room": "af3c8e77ba1a6f27e79ffb69f9b03abc",
+      "to_room": "d71af6ab78c572da8d571296a2dc0493",
+      "direction": "north",
+      "cost": 1.0,
+      "bidirectional": true,
+      "blocked": false,
+      "notes": ""
+    }
+  ]
+}
