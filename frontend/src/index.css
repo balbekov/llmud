@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --text-primary: #e5e5e5;
+  --text-secondary: #a3a3a3;
+  --accent: #f97316;
+  --border: #404040;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* MUD output styling */
+.mud-output {
+  font-family: 'JetBrains Mono', monospace;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.5;
+}
+
+/* ANSI color support */
+.ansi-black { color: #000000; }
+.ansi-red { color: #cc0000; }
+.ansi-green { color: #00cc00; }
+.ansi-yellow { color: #cccc00; }
+.ansi-blue { color: #0000cc; }
+.ansi-magenta { color: #cc00cc; }
+.ansi-cyan { color: #00cccc; }
+.ansi-white { color: #cccccc; }
+.ansi-bright-black { color: #666666; }
+.ansi-bright-red { color: #ff0000; }
+.ansi-bright-green { color: #00ff00; }
+.ansi-bright-yellow { color: #ffff00; }
+.ansi-bright-blue { color: #0000ff; }
+.ansi-bright-magenta { color: #ff00ff; }
+.ansi-bright-cyan { color: #00ffff; }
+.ansi-bright-white { color: #ffffff; }
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #525252;
+}
+
+/* Button styles */
+.btn {
+  @apply px-4 py-2 rounded font-medium transition-colors duration-200;
+}
+
+.btn-primary {
+  @apply bg-orange-600 text-white hover:bg-orange-700;
+}
+
+.btn-secondary {
+  @apply bg-gray-700 text-white hover:bg-gray-600;
+}
+
+.btn-danger {
+  @apply bg-red-600 text-white hover:bg-red-700;
+}
+
+/* Card styles */
+.card {
+  @apply bg-gray-800 rounded-lg border border-gray-700 p-4;
+}
+
+/* Input styles */
+.input {
+  @apply bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white 
+         focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent;
+}

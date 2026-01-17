@@ -1,0 +1,41 @@
+# Render Blueprint for LLMUD
+# Deploy with: render blueprint launch
+
+services:
+  # Backend API Service
+  - type: web
+    name: llmud-backend
+    runtime: python
+    buildCommand: |
+      cd backend && pip install -r requirements.txt
+      cd ../mud_client && pip install -e .
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: REPLICATE_API_TOKEN
+        sync: false
+    healthCheckPath: /
+    autoDeploy: true
+
+  # Frontend Static Site
+  - type: web
+    name: llmud-frontend
+    runtime: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=3600
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: llmud-backend
+          property: url
+    autoDeploy: true

@@ -1,0 +1,17 @@
+# Backend API Requirements
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-dotenv>=1.0.0
+websockets>=12.0
+pydantic>=2.5.0
+httpx>=0.26.0
+
+# LLM providers
+anthropic>=0.18.0
+openai>=1.12.0
+
+# Image generation
+replicate>=0.22.0
+
+# CORS and utilities
+python-multipart>=0.0.6
