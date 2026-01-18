@@ -4,7 +4,7 @@ LLMUD - AI-Powered MUD Client
 A Python package for connecting to MUDs with LLM-driven gameplay.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from .telnet_client import TelnetClient
 from .gmcp_handler import GMCPHandler
@@ -21,6 +21,11 @@ from .map_graph import (
     Direction,
 )
 from .map_agent import MapAgent, MappingContext, MapUpdateResult
+
+# New agentic architecture
+from .agentic_agent import AgenticAgent, KnowledgeBase, AgentState, ToolResult
+from .agentic_session import AgenticSession, AgenticSessionConfig, create_session, quick_test
+from .eval_framework import EvalRunner, EvalSuite, EvalResult, EvalReport
 
 __all__ = [
     # Core components
@@ -42,4 +47,18 @@ __all__ = [
     "MapAgent",
     "MappingContext",
     "MapUpdateResult",
+    # Agentic AI components
+    "AgenticAgent",
+    "AgentState",
+    "KnowledgeBase",
+    "ToolResult",
+    "AgenticSession",
+    "AgenticSessionConfig",
+    "create_session",
+    "quick_test",
+    # Evaluation framework
+    "EvalRunner",
+    "EvalSuite",
+    "EvalResult",
+    "EvalReport",
 ]
