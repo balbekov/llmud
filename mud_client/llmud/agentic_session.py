@@ -34,7 +34,7 @@ class AgenticSessionConfig:
     
     # AI Configuration
     openai_api_key: str = ""
-    model: str = "gpt-4o"  # Use gpt-4o for good balance of capability and speed
+    model: str = "gpt-4.1"  # Use gpt-4.1 for advanced reasoning capabilities
     knowledge_path: str = "./knowledge_base.json"
     
     # Mapping Configuration

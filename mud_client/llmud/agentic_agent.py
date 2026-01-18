@@ -469,7 +469,7 @@ class AgenticAgent:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "gpt-4o",
+        model: str = "gpt-4.1",
         knowledge_path: Optional[str] = None,
         send_command_callback: Optional[Callable] = None,
         get_state_callback: Optional[Callable] = None,
@@ -496,9 +496,12 @@ class AgenticAgent:
         self._response_buffer: list[str] = []
         self._waiting_for_response = False
         
-        # Rate limiting
+        # Rate limiting and backoff
         self._last_request_time = 0
         self._min_request_interval = 0.5
+        self._max_retries = 5
+        self._base_backoff = 1.0  # Base backoff in seconds
+        self._max_backoff = 60.0  # Maximum backoff in seconds
         
         # Conversation history for context
         self._conversation: list[dict] = []
@@ -517,6 +520,48 @@ class AgenticAgent:
             except ImportError:
                 raise ImportError("openai package required: pip install openai")
         return self._client
+    
+    async def _api_call_with_backoff(self, api_func, *args, **kwargs):
+        """
+        Make an API call with exponential backoff on rate limit errors.
+        
+        Args:
+            api_func: The async API function to call
+            *args, **kwargs: Arguments to pass to the API function
+            
+        Returns:
+            The API response
+            
+        Raises:
+            The last exception if all retries fail
+        """
+        import random
+        
+        last_exception = None
+        
+        for attempt in range(self._max_retries):
+            try:
+                return await api_func(*args, **kwargs)
+            except Exception as e:
+                last_exception = e
+                error_str = str(e).lower()
+                
+                # Check if it's a rate limit error
+                if "rate_limit" in error_str or "429" in error_str or "too many requests" in error_str:
+                    # Calculate backoff with jitter
+                    backoff = min(
+                        self._base_backoff * (2 ** attempt) + random.uniform(0, 1),
+                        self._max_backoff
+                    )
+                    logger.warning(f"Rate limit hit, backing off for {backoff:.1f}s (attempt {attempt + 1}/{self._max_retries})")
+                    await asyncio.sleep(backoff)
+                else:
+                    # For non-rate-limit errors, raise immediately
+                    raise
+        
+        # If we've exhausted all retries, raise the last exception
+        logger.error(f"All {self._max_retries} retries exhausted")
+        raise last_exception
     
     def set_callbacks(
         self,
@@ -1003,7 +1048,8 @@ What is your next action? Use tool calls to interact with the game."""
             ]
             
             while tool_calls_made < max_tool_calls:
-                response = await client.chat.completions.create(
+                response = await self._api_call_with_backoff(
+                    client.chat.completions.create,
                     model=self.model,
                     messages=messages,
                     tools=tools,
@@ -1080,8 +1126,10 @@ What is your next action? Use tool calls to interact with the game."""
         except Exception as e:
             logger.error(f"Agent think_and_act error: {e}")
             results.append(ToolResult(False, None, f"Agent error: {e}"))
-            # Clear conversation on errors to prevent cascading failures
-            self._conversation.clear()
+            # Only clear conversation on non-rate-limit errors
+            error_str = str(e).lower()
+            if "rate_limit" not in error_str and "429" not in error_str:
+                self._conversation.clear()
         
         return results
     
