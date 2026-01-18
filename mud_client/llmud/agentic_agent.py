@@ -469,7 +469,7 @@ class AgenticAgent:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "gpt-4.1",
+        model: str = "gpt-5.1",
         knowledge_path: Optional[str] = None,
         send_command_callback: Optional[Callable] = None,
         get_state_callback: Optional[Callable] = None,

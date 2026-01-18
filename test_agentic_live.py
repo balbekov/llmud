@@ -519,7 +519,144 @@ class LiveTests:
             await session.disconnect()
 
 
-async def run_all_tests(api_key: str, model: str = "gpt-4o"):
+    async def test_atreides_guild(self) -> bool:
+        """Test navigating to Atreides guild, reading messages, and returning."""
+        print("\n" + "="*60)
+        print("TEST: Atreides Guild Messages")
+        print("="*60)
+        
+        config = AgenticSessionConfig(
+            host=self.host,
+            port=self.port,
+            openai_api_key=self.api_key,
+            model=self.model,
+            map_enabled=True,
+        )
+        
+        session = AgenticSession(config)
+        collected_output = []
+        
+        def on_event(event):
+            if event.type == "text":
+                text = event.data.get("text", "")
+                if text.strip():
+                    collected_output.append(text)
+                    # Only print short snippets during test
+                    if len(text) > 100:
+                        print(f"MUD: {text[:100]}...")
+                    else:
+                        print(f"MUD: {text}")
+            elif event.type == "ai_action":
+                print(f"AI: {event.data.get('message', '')}")
+        
+        session.on_event(on_event)
+        
+        # Track goal completion via event
+        goal_result = {"completed": False, "success": False, "summary": ""}
+        
+        def on_goal_event(event):
+            if event.type == "goal_complete":
+                goal_result["completed"] = True
+                goal_result["success"] = event.data.get("success", False) if event.data else False
+                goal_result["summary"] = event.data.get("summary", "") if event.data else ""
+        
+        session.on_event(on_goal_event)
+        
+        try:
+            connected = await session.connect()
+            if not connected:
+                print("✗ Failed to connect")
+                return False
+            
+            print("✓ Connected")
+            
+            # Start session loop in background
+            loop_task = asyncio.create_task(session.run())
+            await asyncio.sleep(1)
+            
+            # Enter as guest
+            print("Sending 'guest'...")
+            await session.send_command("guest")
+            await asyncio.sleep(2)
+            
+            # Send look to trigger room update
+            print("Sending 'look'...")
+            await session.send_command("look")
+            await asyncio.sleep(3)
+            
+            # Tell agent about the task
+            if session.agent:
+                session.agent._tool_update_observation(
+                    "I am logged in as a guest. I need to navigate to the Atreides guild, read messages, and return.",
+                    "room"
+                )
+            
+            # Set the guild exploration goal
+            goal = """Your mission:
+1. Go north 6 times (use 'n' command 6 times)
+2. Then use 'enter' command to enter the Atreides guild
+3. Once inside, read messages using 'news list' and 'news read' commands
+4. After reading messages, return to the Astro Port (go south 6 times, or find your way back)
+5. Call report_complete with success=True and include a summary of what the messages were about
+
+Important: Read at least 2-3 news items to understand what they contain. Use 'news read 1', 'news read 2', etc."""
+            
+            print(f"\nGoal: Navigate to Atreides guild, read messages, return to spaceport")
+            
+            await session.set_agent_goal(goal)
+            session.set_ai_active(True)
+            
+            # Wait for goal completion (longer timeout for this complex task)
+            start_time = asyncio.get_event_loop().time()
+            timeout = 180  # 3 minutes
+            
+            while not goal_result["completed"]:
+                elapsed = asyncio.get_event_loop().time() - start_time
+                if elapsed > timeout:
+                    print(f"Timeout after {elapsed:.0f}s")
+                    break
+                
+                if not session._running:
+                    break
+                
+                await asyncio.sleep(0.3)
+            
+            # Clean up
+            session._running = False
+            await asyncio.sleep(0.5)
+            try:
+                loop_task.cancel()
+            except:
+                pass
+            
+            # Print collected output for analysis
+            print("\n" + "="*60)
+            print("COLLECTED OUTPUT (last 50 lines):")
+            print("="*60)
+            for line in collected_output[-50:]:
+                print(line[:200])
+            
+            if goal_result["completed"]:
+                if goal_result["success"]:
+                    print(f"\n✓ Goal achieved: {goal_result['summary']}")
+                    return True
+                else:
+                    print(f"\n✗ Goal failed: {goal_result['summary']}")
+                    return False
+            
+            print(f"\n✗ Goal not completed")
+            return False
+                
+        except Exception as e:
+            print(f"✗ Error: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+        finally:
+            await session.disconnect()
+
+
+async def run_all_tests(api_key: str, model: str = "gpt-5.1"):
     """Run all live tests."""
     tests = LiveTests(api_key, model)
     
@@ -570,7 +707,7 @@ async def run_all_tests(api_key: str, model: str = "gpt-4o"):
     return results
 
 
-async def run_single_test(api_key: str, test_name: str, model: str = "gpt-4o"):
+async def run_single_test(api_key: str, test_name: str, model: str = "gpt-5.1"):
     """Run a single test."""
     tests = LiveTests(api_key, model)
     
@@ -580,6 +717,7 @@ async def run_single_test(api_key: str, test_name: str, model: str = "gpt-4o"):
         "basic": tests.test_basic_commands,
         "loop": tests.test_navigation_loop,
         "exploration": tests.test_exploration,
+        "atreides": tests.test_atreides_guild,
     }
     
     if test_name not in test_map:
@@ -593,7 +731,7 @@ async def run_single_test(api_key: str, test_name: str, model: str = "gpt-4o"):
 def main():
     parser = argparse.ArgumentParser(description="Run live MUD AI tests")
     parser.add_argument("--api-key", required=True, help="OpenAI API key")
-    parser.add_argument("--model", default="gpt-4o", help="Model to use")
+    parser.add_argument("--model", default="gpt-5.1", help="Model to use")
     parser.add_argument("--test", help="Specific test to run (connection, guest, basic, loop, exploration)")
     parser.add_argument("--all", action="store_true", help="Run all tests")
     
