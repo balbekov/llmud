@@ -4,6 +4,7 @@ A Python package for connecting to MUDs (Multi-User Dungeons) with LLM-driven ga
 
 ## Features
 
+- **Terminal App**: Claude Code-style terminal client with local commands
 - **Telnet Connection**: Full telnet protocol support with GMCP (Generic MUD Communication Protocol)
 - **LLM Integration**: Support for OpenAI and Anthropic APIs for AI-driven decision making
 - **Context Management**: Smart context window management to keep strategy in focus while rotating game data
@@ -24,7 +25,63 @@ cd mud_client
 pip install -e .
 ```
 
-## Quick Start
+## Terminal App (Recommended)
+
+The easiest way to use LLMUD is via the terminal app:
+
+```bash
+# Start the terminal app
+llmud
+
+# Or with auto-connect
+llmud --auto-connect
+
+# Or with auto-login
+llmud -u YourUsername -p YourPassword --auto-connect --auto-login
+```
+
+### Local Commands
+
+All local commands start with `/` and are NOT sent to the MUD server:
+
+| Command | Description |
+|---------|-------------|
+| `/help` | Show help message |
+| `/ai` | Get AI command suggestion |
+| `/y`, `/yes` | Confirm and send pending AI suggestion |
+| `/n`, `/no` | Reject pending AI suggestion |
+| `/status` | Show current game status |
+| `/config` | Show current configuration |
+| `/set <key> <value>` | Change a setting |
+| `/connect [host] [port]` | Connect to MUD server |
+| `/disconnect` | Disconnect from server |
+| `/login [user] [pass]` | Login with credentials |
+| `/provider <openai\|anthropic>` | Set AI provider |
+| `/model <name>` | Set AI model |
+| `/gmcp` | Toggle GMCP message display |
+| `/map` | Show explored rooms |
+| `/context` | Show AI context token usage |
+| `/clear` | Clear screen |
+| `/quit` | Exit application |
+
+### AI Suggestions
+
+Use `/ai` to get an AI-powered command suggestion:
+
+```
+❯ /ai
+ℹ Thinking...
+┌─ 🤖 AI Suggestion ─────────────────────────────────┐
+│ north                                               │
+│                                                     │
+│ Model: gpt-4o-mini, Tokens: 342                    │
+└────────────────────────────────────────────────────┘
+Send this command? /y to confirm, /n to reject, or type your own command
+```
+
+Then use `/y` to send it or `/n` to reject.
+
+## Quick Start (Programmatic)
 
 ```python
 import asyncio
