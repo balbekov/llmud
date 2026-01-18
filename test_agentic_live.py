@@ -343,17 +343,41 @@ class LiveTests:
             # Enter as guest
             print("Sending 'guest'...")
             await session.send_command("guest")
-            await asyncio.sleep(5)
+            await asyncio.sleep(2)
             
-            # Tell agent it's already in game
+            # Send look to trigger room update
+            print("Sending 'look'...")
+            await session.send_command("look")
+            
+            # Wait for login and GMCP data
+            print("Waiting for GMCP data...")
+            for _ in range(30):  # Wait up to 6 seconds
+                await asyncio.sleep(0.2)
+                if session.gmcp.has_room_info() and session.gmcp.has_vitals():
+                    break
+            
+            # Check if we have valid state
+            if session.gmcp.has_room_info():
+                room = session.gmcp.room
+                print(f"✓ In room: {room.name}")
+                print(f"  Exits: {', '.join(room.get_exit_directions())}")
+            else:
+                print("? No room info received yet - will try with agent")
+            
+            hp, maxhp = session.gmcp.get_hp()
+            print(f"HP: {hp}/{maxhp}")
+            
+            # Tell agent it's already in game with correct info
             if session.agent:
+                room_name = session.gmcp.room.name if session.gmcp.has_room_info() else "a room in the game"
+                hp_info = f"HP is {hp}/{maxhp}" if maxhp > 0 else "HP should be full (50/50)"
                 session.agent._tool_update_observation(
-                    "I am logged in as a guest at the Caladan Astro Port.",
+                    f"I am logged in as a guest at {room_name}. {hp_info}. I am ready to proceed with the navigation task.",
                     "room"
                 )
             
-            # Set navigation goal
-            goal = "You are in the game. Move north from your current location, then return south to get back to where you started. Use 'look' to verify your position. Report complete with success when you've returned."
+            # Set navigation goal - very simple
+            goal = """Move north once, then move south once to return. When done, call report_complete(success=True, summary='Moved north to X and returned south to Y') where X and Y are the room names."""
             print(f"\nGoal: {goal}")
             
             await session.set_agent_goal(goal)

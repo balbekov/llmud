@@ -868,13 +868,25 @@ You interact with the MUD ONLY through tool calls. Each action you take should b
 4. Use update_observation to record important findings
 5. Use add_todo to break down complex goals
 6. Use update_knowledge when you learn important rules
-7. When the goal is achieved, use report_complete
+7. **IMPORTANT: When the goal is achieved, ALWAYS use report_complete with success=True**
+8. If the goal cannot be achieved, use report_complete with success=False and explain why
 
 ## Safety Rules
 - If HP is low (below 30%), prioritize fleeing and healing
 - Don't attack NPCs much stronger than you
 - Keep some money for emergencies
 - Explore carefully in new areas
+
+## Navigation Tips
+- After moving, use 'look' to see your new location
+- Remember your starting room name by using update_observation
+- Standard directions: n, s, e, w, ne, nw, se, sw, up, down
+- To go back after going north, go south
+
+## Task Completion
+- ALWAYS call report_complete when you have achieved the goal
+- Even if you did the task in a previous cycle, check your observations and if the goal is met, call report_complete immediately
+- Don't repeat actions if you've already done them - check your observations first
 """
     
     def _format_todos(self) -> str:
