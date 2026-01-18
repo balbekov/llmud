@@ -21,6 +21,7 @@ from .map_graph import (
     Direction,
 )
 from .map_agent import MapAgent, MappingContext, MapUpdateResult
+from .terminal_app import TerminalApp, AppConfig
 
 # New agentic architecture
 from .agentic_agent import AgenticAgent, KnowledgeBase, AgentState, ToolResult
@@ -47,6 +48,9 @@ __all__ = [
     "MapAgent",
     "MappingContext",
     "MapUpdateResult",
+    # Terminal app
+    "TerminalApp",
+    "AppConfig",
     # Agentic AI components
     "AgenticAgent",
     "AgentState",
