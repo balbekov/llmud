@@ -213,7 +213,12 @@ class LiveTests:
             
             # Wait for login to complete
             print("Waiting for login...")
-            await asyncio.sleep(5)
+            await asyncio.sleep(2)
+            
+            # Send look to trigger room update
+            print("Sending 'look'...")
+            await session.send_command("look")
+            await asyncio.sleep(3)
             
             # Check if we got room info
             if session.gmcp.has_room_info():
@@ -224,7 +229,7 @@ class LiveTests:
             # Tell the agent about current state via an observation
             if session.agent:
                 session.agent._tool_update_observation(
-                    "I am already logged into the MUD as a guest character and standing in a room.",
+                    "I am already logged into the MUD as a guest character and standing in a room. I should use 'look' to see the room and then report the exits.",
                     "room"
                 )
             
